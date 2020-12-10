@@ -1,24 +1,27 @@
 '''
-All functions related to parsing AHRQ website for data
+Class objects related to parsing a webpage and the AHRQ site
 
 author: Derek Herincx (derek663@gmail.com)
-last_updated: 12/04/2020
+last_updated: 12/10/2020
 '''
 
 from typing import Pattern
 
 import re
-import urllib.request
 import requests
 
 from bs4 import BeautifulSoup
 
-from config import Config as cfg
 from errors.exceptions import MissingHrefError, Error404
+from utilities.urls import URL
 
 # regular expressions compiled here for efficiency
 CSV_REGEX = re.compile(".csv$")
 HREF_REGEX = re.compile("compendium-([0-9]{4})")
+re_options = {"csv": CSV_REGEX, "href": HREF_REGEX}
+
+# Type hints
+Response = requests.models.Response
 
 class Parser:
     """
@@ -31,12 +34,12 @@ class Parser:
         self.url = url
 
     @staticmethod
-    def is_response_valid(response):
+    def is_response_valid(response: Response) -> bool:
         """
         Does GET request return a valid response (status code of 200)?
 
         Args:
-            response: A Response object
+            response (requests.models.Response): A Response object
 
         Returns:
             bool: True or False
@@ -53,7 +56,7 @@ class Parser:
             - parser (str, default: 'html.parser'): Type of parser to use with bs4
 
         Raises:
-            - Error404: 404 Error custom class
+            - Error404 (errors.exceptions): 404 Error custom class
 
         Returns:
         - soup (bs4.BeautifulSoup) - A bs4 soup object to extract info from
@@ -96,8 +99,8 @@ class Compendium(Parser):
         super().__init__(*args, **kwargs)
 
     @property
-    def _AHRQ_COMPENDIUM_BASE(self):
-        return "https://www.ahrq.gov/chsp/data-resources/compendium"
+    def _AHRQ_COMPENDIUM_DOMAIN(self):
+        return "https://www.ahrq.gov/"
 
     def get_href_links(self, pattern: Pattern[str]) -> list:
         """
@@ -120,44 +123,40 @@ class Compendium(Parser):
         """
 
         soup = self.create_soup_from_url()
-
          # ideally, retrieves a small set of hrefs linking to data
         hrefs = self.parse_soup_for_regex_matches(soup=soup, pattern=pattern)
         if not hrefs:
-            raise MissingHrefError
+            raise MissingHrefError("No tags matching tags were found")
 
         # cleanup to retrieve href value, not entire tag
         hrefs = [h['href'] for h in hrefs]
         return hrefs
 
-    def create_valid_data_urls(
+    def create_formatted_regex_urls(
         self,
-        pattern: Pattern[str] = HREF_REGEX
+        pattern: str,
     ) -> list:
         """
         Small utility function that creates a proper, url string from
         the extracted `href` text for each compendium year
 
         Args:
-            - pattern (Pattern[str]): a compiled regex object
-                * Example: re.compile("[0-9]")
+            - pattern (str): either specify "csv" or "href" to indicate you
+            want to find csv files or compendium links.
 
         Returns:
             - valid_urls (list): urls that contain the AHRQ's base URL string
         """
+        options = list(re_options.keys())
+        if pattern not in options:
+            msg = ' or '.join(options)
+            raise ValueError(f"pattern must be either {msg}")
 
         valid_urls = []
-        for href in self.get_href_links(pattern):
-            # use the same regex pattern, but access second group match
-            year = re.search(pattern, href).group(1)
-            valid_urls.append(f"{self._AHRQ_COMPENDIUM_BASE}-{year}.html")
+        # formatter to make valid URLs
+        formatter = URL(self._AHRQ_COMPENDIUM_DOMAIN)
+
+        for href in self.get_href_links(re_options[pattern]):
+            valid_urls.append(formatter.configure(href))
 
         return valid_urls
-
-
-if __name__ == '__main__':
-    parser = Compendium(cfg.AHRQ_COMPENDIUM_URL)
-    urls = parser.create_valid_data_urls()
-
-    # gets us the files to download
-    file_urls = [Compendium(url).get_href_links(CSV_REGEX) for url in urls]
