@@ -1,5 +1,5 @@
 '''
-Class objects related to parsing a webpage and the AHRQ site
+Class objects related to parsing a webpage and the AHRQ site.
 
 author: Derek Herincx (derek663@gmail.com)
 last_updated: 12/10/2020
@@ -22,10 +22,14 @@ re_options = {"csv": CSV_REGEX, "href": HREF_REGEX}
 
 # Type hints
 Response = requests.models.Response
+soup = BeautifulSoup
 
 class Parser:
     """
-    Generalized Parser class
+    Parser class. Object is generalized to be instantiated with any URL. Users
+    can call the `create_soup_from_url` method to view a BeautifulSoup object
+    resulting from theirHTTP request. This class also enables a user to parse
+    any soup object and find href attributes matching a specifc regex pattern
 
     Args:
         url (str): a URL string
@@ -39,15 +43,15 @@ class Parser:
         Does GET request return a valid response (status code of 200)?
 
         Args:
-            response (requests.models.Response): A Response object
+            - response (requests.models.Response): A Response object
 
         Returns:
-            bool: True or False
+            - bool: True or False
         """
         return response.status_code == 200
 
 
-    def create_soup_from_url(self, parser: str = 'html.parser'):
+    def create_soup_from_url(self, parser: str = 'html.parser') -> soup:
         """
         Creates a soup object from a valid URL
 
@@ -59,7 +63,7 @@ class Parser:
             - Error404 (errors.exceptions): 404 Error custom class
 
         Returns:
-        - soup (bs4.BeautifulSoup) - A bs4 soup object to extract info from
+            - soup (bs4.BeautifulSoup): A bs4 soup object to extract info from
         """
 
         response = requests.get(self.url, timeout=10)
@@ -93,13 +97,21 @@ class Parser:
 
 class Compendium(Parser):
     """
-    Class pertaining to AHRQ compendium files
+    Inherits from Parser and contains specific methods pertaining to retrieving
+    compendium files from `https://www.ahrq.gov`. This class uses methods
+    inherited from Parser to retrieve appropriate href links to multi-year
+    compendium files. Due to inconsistencies in href links from AHRQ, this
+    class performs small string manipulations to output proper URLs and ensure
+    things like domain are included
+
+    Inherits:
+        - Parser (object)
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     @property
-    def _AHRQ_COMPENDIUM_DOMAIN(self):
+    def AHRQ_COMPENDIUM_DOMAIN(self) -> str:
         return "https://www.ahrq.gov/"
 
     def get_href_links(self, pattern: Pattern[str]) -> list:
@@ -150,11 +162,11 @@ class Compendium(Parser):
         options = list(re_options.keys())
         if pattern not in options:
             msg = ' or '.join(options)
-            raise ValueError(f"pattern must be either {msg}")
+            raise ValueError(f"pattern must be a string: either {msg}")
 
         valid_urls = []
         # formatter to make valid URLs
-        formatter = URL(self._AHRQ_COMPENDIUM_DOMAIN)
+        formatter = URL(self.AHRQ_COMPENDIUM_DOMAIN)
 
         for href in self.get_href_links(re_options[pattern]):
             valid_urls.append(formatter.configure(href))

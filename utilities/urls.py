@@ -11,7 +11,7 @@ class URL:
     Generalized URL class
 
     Args:
-        domain (str): A domain name to check for, with protocol
+        - domain (str): A domain name to check for, with protocol
     """
     def __init__(self, domain: str):
         self.domain=domain
@@ -19,30 +19,30 @@ class URL:
     def __str__(self):
         return f'<URL {self.domain}>'
 
-    def does_domain_exist(self, string: str):
+    def does_domain_exist(self, string: str) -> bool:
         """
-        Does the string contain the root of the URL? If considering the
+        Does the string contain the URL domain? If considering the
         following URL: "https://www.ahrq.gov/data-resources/compendium.html",
         the `domain` is considered "www.ahrq.gov"
 
         Args:
-            - string (str) - a string
+            - string (str): a string
 
         Returns:
-            - bool - True or False
+            - bool: True or False
         """
         assert isinstance(string, str)
         compiled = re.search(self.domain, string)
 
         return bool(compiled)
 
-    def configure(self, string: str):
+    def configure(self, string: str) -> str:
         """
         Configures a URL string to include protocol and domain (if it does
         not already exist).
 
         Args:
-            - string (str) - URL string to format
+            - string (str): URL string to format
 
         Returns:
 
