@@ -18,23 +18,24 @@ from utilities.urls import URL
 # regular expressions compiled here for efficiency
 CSV_REGEX = re.compile(".csv$")
 HREF_REGEX = re.compile("compendium-([0-9]{4})")
-re_options = {"csv": CSV_REGEX, "href": HREF_REGEX}
+re_options = {"csv": CSV_REGEX, "compendium": HREF_REGEX}
 
 # Type hints
 Response = requests.models.Response
-soup = BeautifulSoup
 
 class Parser:
     """
     Parser class. Object is generalized to be instantiated with any URL. Users
     can call the `create_soup_from_url` method to view a BeautifulSoup object
-    resulting from theirHTTP request. This class also enables a user to parse
+    resulting from their HTTP request. This class also enables a user to parse
     any soup object and find href attributes matching a specifc regex pattern
 
     Args:
         url (str): a URL string
     """
     def __init__(self, url: str):
+        if not isinstance(url, str):
+            raise ValueError("Parameter `url` must be a string!")
         self.url = url
 
     @staticmethod
@@ -43,7 +44,7 @@ class Parser:
         Does GET request return a valid response (status code of 200)?
 
         Args:
-            - response (requests.models.Response): A Response object
+            - response (Response): A Response object
 
         Returns:
             - bool: True or False
@@ -51,7 +52,7 @@ class Parser:
         return response.status_code == 200
 
 
-    def create_soup_from_url(self, parser: str = 'html.parser') -> soup:
+    def create_soup_from_url(self, parser: str = 'html.parser') -> BeautifulSoup:
         """
         Creates a soup object from a valid URL
 
@@ -107,11 +108,12 @@ class Compendium(Parser):
     Inherits:
         - Parser (object)
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     @property
     def AHRQ_COMPENDIUM_DOMAIN(self) -> str:
+        """
+        AHRQ_COMPENDIUM_DOMAIN; should not be expected to change
+        """
         return "https://www.ahrq.gov/"
 
     def get_href_links(self, pattern: Pattern[str]) -> list:
@@ -153,7 +155,7 @@ class Compendium(Parser):
         the extracted `href` text for each compendium year
 
         Args:
-            - pattern (str): either specify "csv" or "href" to indicate you
+            - pattern (str): either specify "csv" or "compendium" to indicate you
             want to find csv files or compendium links.
 
         Returns:
