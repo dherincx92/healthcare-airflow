@@ -1,7 +1,7 @@
 '''
 Class to generalize formatting of URLs
 
-author: derek_herincx@gallup.com
+author: derek663@gmail.com
 last_updated: 12/10/2020
 '''
 import re
