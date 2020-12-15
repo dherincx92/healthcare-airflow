@@ -5,15 +5,19 @@ author: Derek Herincx (derek663@gmail.com)
 last_updated: 12/10/2020
 '''
 
-from typing import Pattern
+from typing import Literal, Pattern
 
 import re
 import requests
+import warnings
 
 from bs4 import BeautifulSoup
 
 from errors.exceptions import MissingHrefError, Error404
 from utilities.urls import URL
+
+# Hints
+PATTERN_TYPE = Literal['csv', 'compendium']
 
 # regular expressions compiled here for efficiency
 CSV_REGEX = re.compile(".csv$")
@@ -117,7 +121,6 @@ class Compendium(Parser):
     Inherits:
         - Parser (object)
     """
-
     @property
     def AHRQ_COMPENDIUM_DOMAIN(self) -> str:
         """
@@ -125,7 +128,7 @@ class Compendium(Parser):
         """
         return "https://www.ahrq.gov/"
 
-    def get_href_links(self, pattern: Pattern[str]) -> list:
+    def _get_href_links(self, pattern: Pattern[str]) -> list:
         """
         AHRQ's page contains data within the `href` attribute. This method
         takes a soup object and retrieves `href` values that match a specific
@@ -158,29 +161,30 @@ class Compendium(Parser):
 
     def create_formatted_regex_urls(
         self,
-        pattern: str,
+        pattern: PATTERN_TYPE,
     ) -> list:
         """
         Small utility function that creates a proper, url string from
         the extracted `href` text for each compendium year
 
         Args:
-            - pattern (str): either specify "csv" or "compendium" to indicate you
-            want to find csv files or compendium links.
+            - pattern (Literal['csv', 'compendium']): either specify "csv"
+            or "compendium" to indicate you want to find csv files or
+            compendium links.
 
         Returns:
             - valid_urls (list): urls that contain the AHRQ's base URL string
         """
         options = list(re_options.keys())
         if pattern not in options:
-            msg = ' or '.join(options)
+            msg = ' or '.join([f"`{option}`" for option in options])
             raise ValueError(f"pattern must be a string: either {msg}")
 
         valid_urls = []
         # formatter to make valid URLs
         formatter = URL(self.AHRQ_COMPENDIUM_DOMAIN)
 
-        for href in self.get_href_links(re_options[pattern]):
+        for href in self._get_href_links(re_options[pattern]):
             valid_urls.append(formatter.configure(href))
 
         return valid_urls
