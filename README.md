@@ -12,7 +12,7 @@ The `Parser` class is meant to work in isolation for any URL string:
 ```python3
 
 import re
-from compendium import Parser
+from parser import Parser
 
 # Instantiating a parser for AHRQ's main compendium page
 url = "https://www.ahrq.gov/chsp/data-resources/compendium.html"
@@ -34,4 +34,17 @@ matches = parser.parse_soup_for_regex_matches(
 #  <a href="/chsp/data-resources/compendium-2016.html">2016 Compendium</a>
 # ]
 
+```
+
+### Compendium Parser
+A class that inherits from `Parser` and extends functionality to solve problems specific to the AHRQ site. The goal of this parser is to give the user _proper_ and ready-to-use URLs for further processing. To use, simply instantiate and call the `create_formatted_regex_urls` method as following:
+
+```python3
+from parser import Compendium
+
+url = "https://www.ahrq.gov/chsp/data-resources/compendium.html"
+parser = Compendiun(url)
+
+
+yearly_compendium_links = parser.create_formatted_regex_urls('compendium')
 ```
