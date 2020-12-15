@@ -100,7 +100,8 @@ class Parser:
         """
         if name:
             matches = soup.find_all(**{name: pattern})
-        matches = soup.find_all(pattern)
+        else:
+            matches = soup.find_all(pattern)
         return matches
 
 
