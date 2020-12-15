@@ -78,13 +78,19 @@ class Parser:
 
 
     @staticmethod
-    def parse_soup_for_regex_matches(soup, pattern: Pattern[str]):
+    def parse_soup_for_regex_matches(
+        soup,
+        pattern: Pattern[str],
+        name: str = 'href'
+    ):
         """
         Parses a bs4.BeautifulSoup object and finds href objects matching the
         compiled regex pattern
 
         Args:
             - soup (bs4.BeautfiulSoup): a beautiful soup object
+            - name (str, default: 'href'): atttribute name which will be used
+            to find matches with `pattern`
             - pattern (re.Pattern): a compiled regex object
                 * Example: re.compile("[0-9]")
 
@@ -92,8 +98,10 @@ class Parser:
             - hrefs (list): Matching href objects
 
         """
-        hrefs = soup.find_all(href=pattern)
-        return hrefs
+        if name:
+            matches = soup.find_all(**{name: pattern})
+        matches = soup.find_all(pattern)
+        return matches
 
 
 class Compendium(Parser):
@@ -138,6 +146,7 @@ class Compendium(Parser):
 
         soup = self.create_soup_from_url()
          # ideally, retrieves a small set of hrefs linking to data
+         # remember, by default, method searches `href` attribute
         hrefs = self.parse_soup_for_regex_matches(soup=soup, pattern=pattern)
         if not hrefs:
             raise MissingHrefError("No tags matching tags were found")
