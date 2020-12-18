@@ -1,5 +1,6 @@
 '''
 Class to generalize formatting of URLs
+for a specific URL domain name
 
 author: derek663@gmail.com
 last_updated: 12/10/2020
@@ -32,7 +33,9 @@ class URL:
             - bool: True or False
         """
         assert isinstance(string, str)
-        compiled = re.search(self.domain, string)
+
+        # `match` asserts domain is at the beginning of string
+        compiled = re.match(self.domain, string)
 
         return bool(compiled)
 

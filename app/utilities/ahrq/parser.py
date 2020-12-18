@@ -2,19 +2,18 @@
 Class objects related to parsing a webpage and the AHRQ site.
 
 author: Derek Herincx (derek663@gmail.com)
-last_updated: 12/10/2020
+last_updated: 12/18/2020
 '''
 
 from typing import Literal, Pattern
 
 import re
 import requests
-import warnings
 
 from bs4 import BeautifulSoup
 
-from errors.exceptions import MissingHrefError, Error404
-from utilities.urls import URL
+from app.errors import MissingHrefError, Error404
+from app.utilities import URL
 
 # Hints
 PATTERN_TYPE = Literal['csv', 'compendium']
@@ -32,7 +31,7 @@ class Parser:
     Parser class. Object is generalized to be instantiated with any URL. Users
     can call the `create_soup_from_url` method to view a BeautifulSoup object
     resulting from their HTTP request. This class also enables a user to parse
-    any soup object and find href attributes matching a specifc regex pattern
+    any soup object and find href attributes matching a specific regex pattern
 
     Args:
         url (str): a URL string
@@ -71,6 +70,7 @@ class Parser:
             - soup (bs4.BeautifulSoup): A bs4 soup object to extract info from
         """
 
+        # timeout the request if no response returned after 10s
         response = requests.get(self.url, timeout=10)
 
         if self.is_response_valid(response):
@@ -88,7 +88,7 @@ class Parser:
         name: str = 'href'
     ):
         """
-        Parses a bs4.BeautifulSoup object and finds href objects matching the
+        Parses a bs4.BeautifulSoup object and finds `href` objects matching the
         compiled regex pattern
 
         Args:
@@ -121,10 +121,11 @@ class Compendium(Parser):
     Inherits:
         - Parser (object)
     """
+
     @property
     def AHRQ_COMPENDIUM_DOMAIN(self) -> str:
         """
-        AHRQ_COMPENDIUM_DOMAIN; should not be expected to change
+        AHRQ_COMPENDIUM_DOMAIN is the url domain for the AHRQ site
         """
         return "https://www.ahrq.gov/"
 
