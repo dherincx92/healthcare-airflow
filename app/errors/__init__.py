@@ -1,1 +1,1 @@
-from .exceptions import MissingHrefError, Error404
+from .exceptions import MissingHrefError, Error404, ItemNotFound

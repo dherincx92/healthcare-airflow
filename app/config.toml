@@ -1,0 +1,9 @@
+# debug mode
+debug = false
+test = "1"
+
+[ahrq]
+domain = "https://www.ahrq.gov"
+file_path = "chsp/data-resources/compendium.html"
+compendium_url = "${ahrq.domain}/${ahrq.file_path}"
+
