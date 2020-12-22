@@ -1,5 +1,5 @@
 '''
-This code is inspired and slightly modified from
+This code is a direct copy from:
 https://github.com/PrefectHQ/prefect/blob/master/src/prefect/configuration.py
 
 author: derek663@gmail.com
