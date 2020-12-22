@@ -6,6 +6,3 @@ test = "1"
 domain = "https://www.ahrq.gov"
 file_path = "chsp/data-resources/compendium.html"
 compendium_url = "${ahrq.domain}/${ahrq.file_path}"
-    [ahrq.arbitrary]
-        value = "test_value1"
-
