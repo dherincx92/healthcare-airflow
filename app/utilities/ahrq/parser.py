@@ -160,10 +160,7 @@ class Compendium(Parser):
         hrefs = [h['href'] for h in hrefs]
         return hrefs
 
-    def create_formatted_regex_urls(
-        self,
-        option: str,
-    ) -> list:
+    def create_formatted_regex_urls(self, option: str) -> list:
         """
         Small utility function that creates a proper, url string from
         the extracted `href` text for each compendium year
