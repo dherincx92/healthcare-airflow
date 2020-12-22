@@ -10,6 +10,7 @@ from os.path import dirname, join
 import re
 from typing import Pattern
 
+from box import Box
 import toml
 
 from app.utilities import mapping
@@ -45,13 +46,13 @@ def load_toml(path: str):
 
 def check_for_regex_match(val: str, PATTERN: Pattern[str]) -> bool:
     """
-    Is pattern found anywhere in a string? We just need to know if there is a
+    Is PATTERN found anywhere in a string? We just need to know if there is a
     match. We don't need to know if there are multiple matches since we aren't
     doing the substitution here.
 
     Args:
         - val (str): string to check for matches
-        - pattern (Pattern[str]): a compiled regex pattern (i.e. `re.compile)
+        - pattern (Pattern[str]): a compiled regex pattern (i.e. `re.compile`)
 
     Returns:
         - bool (bool): `True` if a match is found anywhere in string, else
@@ -64,11 +65,18 @@ def interpolate_config_vars(config: dict, val: str):
     """
     Interpolates and formats strings referencing other keys in our TOML file.
     While this isn't default behavior for TOML, we enable it here to reduce
-    string duplication where possible
+    string duplication where possible. If a non-existent key is found
 
     Args:
         - config (dict): a dictionary type
         - val (str): a string to format
+
+    Raises:
+        - ItemNotFound (Error): exception indicating that the item you
+        attempted to substitute does not exist
+
+    Returns:
+        - val (str): string with referenced keys interpolated
     """
 
     # matches is a list of tuples; match will contain 2 groups
@@ -77,14 +85,14 @@ def interpolate_config_vars(config: dict, val: str):
         match_tuple = tuple(match[1].split("."),)
         if not match_tuple in config.keys():
             raise ItemNotFound(f"""
-                Attempting to substitute `{match[1]}` in your TOML config file but
-                it seems that key is not found
+                Attempting to substitute `{match[1]}` in your TOML config
+                file but it seems that key is not found
             """)
         else:
             val = val.replace(match[0], config[match_tuple])
     return val
 
-def load_configuration(path: str) -> dict:
+def load_configuration(path: str) -> Box:
     """
     Callable to load a finalized configuration file
 
@@ -92,12 +100,17 @@ def load_configuration(path: str) -> dict:
         - path (str): path to TOML configuration file
 
     Returns:
-        - final_config (dict): configuration object as a dictionary
+        - final_config (Box): configuration object as a Box object. Box object
+        allows user to access dicitonary keys as attributes ("dot" notation).
+        This will prove beneficial in the `tasks` subdirectory where the
+        config object will come into play.
+
     """
+
     # loads and does literal type matching
     default_config = load_toml(path)
 
-    # flattened dictionary for easier parsing
+    # flattened dictionary for easier parsing; inspired by Prefect!
     flat_config = mapping.nested_to_flatdict(default_config)
 
     keys = flat_config.keys()
@@ -115,6 +128,10 @@ def load_configuration(path: str) -> dict:
                 )
 
     final_config = mapping.flatdict_to_dict(flat_config)
+
+    # convert to box in order to access keys as attributes
+    final_config = Box(final_config)
     return final_config
 
+# object to be exported for use in `app`
 config = load_configuration(DEFAULT_CONFIG)
