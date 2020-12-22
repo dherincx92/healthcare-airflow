@@ -162,7 +162,7 @@ class Compendium(Parser):
 
     def create_formatted_regex_urls(
         self,
-        pattern: PATTERN_TYPE,
+        option: str,
     ) -> list:
         """
         Small utility function that creates a proper, url string from
@@ -177,7 +177,7 @@ class Compendium(Parser):
             - valid_urls (list): urls that contain the AHRQ's base URL string
         """
         options = list(re_options.keys())
-        if pattern not in options:
+        if option not in options:
             msg = ' or '.join([f"`{option}`" for option in options])
             raise ValueError(f"pattern must be a string: either {msg}")
 
@@ -185,7 +185,7 @@ class Compendium(Parser):
         # formatter to make valid URLs
         formatter = URL(self.AHRQ_COMPENDIUM_DOMAIN)
 
-        for href in self._get_href_links(re_options[pattern]):
+        for href in self._get_href_links(re_options[option]):
             valid_urls.append(formatter.configure(href))
 
         return valid_urls
