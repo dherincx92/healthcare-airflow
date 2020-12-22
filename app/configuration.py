@@ -8,11 +8,11 @@ last_updated: 12/18/2020
 from ast import literal_eval
 from os.path import dirname, join
 import re
+from typing import Pattern
 
 import toml
-from box import Box
 
-from app.utilities import nested_to_flatdict
+from app.utilities import mapping
 from app.errors import ItemNotFound
 
 INTERPOLATION_REGEX = re.compile(r"(\${(.[^${}]*)})")
@@ -21,7 +21,7 @@ DEFAULT_CONFIG = join(dirname(__file__), "config.toml")
 def literal_value_conversion(val: str):
     """
     Applies literal expression conversion to parsed objects from a TOML
-    configuration file. Booleans, regardless of case, will be handled properly
+    configuration file.
 
     Args:
         - val (str): a string object to be converted
@@ -43,7 +43,24 @@ def load_toml(path: str):
         k: literal_value_conversion(v) for k,v in toml.load(path).items()
     }
 
-def interpolate_config_vars(config, val: str):
+def check_for_regex_match(val: str, PATTERN: Pattern[str]) -> bool:
+    """
+    Is pattern found anywhere in a string? We just need to know if there is a
+    match. We don't need to know if there are multiple matches since we aren't
+    doing the substitution here.
+
+    Args:
+        - val (str): string to check for matches
+        - pattern (Pattern[str]): a compiled regex pattern (i.e. `re.compile)
+
+    Returns:
+        - bool (bool): `True` if a match is found anywhere in string, else
+        `False`
+    """
+    matches = re.search(PATTERN, val)
+    return bool(matches)
+
+def interpolate_config_vars(config: dict, val: str):
     """
     Interpolates and formats strings referencing other keys in our TOML file.
     While this isn't default behavior for TOML, we enable it here to reduce
@@ -54,32 +71,50 @@ def interpolate_config_vars(config, val: str):
         - val (str): a string to format
     """
 
-    # matches is a list of tuples; each tuple contain 2 groups from regex pattern
+    # matches is a list of tuples; match will contain 2 groups
     matches = re.findall(INTERPOLATION_REGEX, val)
-
     for match in matches:
         match_tuple = tuple(match[1].split("."),)
-        if not match_tuple in dct.keys():
+        if not match_tuple in config.keys():
             raise ItemNotFound(f"""
-                Attempting to substitute {match[1]} in your TOML config file but
+                Attempting to substitute `{match[1]}` in your TOML config file but
                 it seems that key is not found
             """)
         else:
-            val = val.replace(match[0], dct[match_tuple])
-        return val
+            val = val.replace(match[0], config[match_tuple])
+    return val
 
-def load_configuration(path: str):
+def load_configuration(path: str) -> dict:
+    """
+    Callable to load a finalized configuration file
+
+    Args:
+        - path (str): path to TOML configuration file
+
+    Returns:
+        - final_config (dict): configuration object as a dictionary
+    """
+    # loads and does literal type matching
     default_config = load_toml(path)
 
     # flattened dictionary for easier parsing
-    flat_config = nested_to_flatdict(default_config)
+    flat_config = mapping.nested_to_flatdict(default_config)
 
+    keys = flat_config.keys()
+    for key in keys:
+        # if key is not a string, then do nothing...
+        if not isinstance(flat_config[key], str):
+            continue
+        else:
+            check = check_for_regex_match(flat_config[key], INTERPOLATION_REGEX)
+            # only interpolate for those referencing other keys
+            if check:
+                flat_config[key] = interpolate_config_vars(
+                    flat_config,
+                    flat_config[key]
+                )
 
-
+    final_config = mapping.flatdict_to_dict(flat_config)
+    return final_config
 
 config = load_configuration(DEFAULT_CONFIG)
-
-
-
-
-
