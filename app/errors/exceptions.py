@@ -13,3 +13,7 @@ class Error404(Error):
 class ItemNotFound(Error):
     def __init__(self, msg):
         super().__init__(msg)
+
+class InvalidFilePath(Error):
+    def __init__(self, msg):
+        super().__init__(msg)

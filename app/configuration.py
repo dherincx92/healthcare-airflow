@@ -6,15 +6,17 @@ last_updated: 12/18/2020
 '''
 
 from ast import literal_eval
-from os.path import dirname, join
+import os
+from os.path import dirname, join, exists
 import re
 from typing import Pattern
 
 from box import Box
+from decouple import config as cfg
 import toml
 
 from app.utilities import mapping
-from app.errors import ItemNotFound
+from app.errors import InvalidFilePath,ItemNotFound
 
 INTERPOLATION_REGEX = re.compile(r"(\${(.[^${}]*)})")
 DEFAULT_CONFIG = join(dirname(__file__), "config.toml")
@@ -43,6 +45,33 @@ def load_toml(path: str):
     return {
         k: literal_value_conversion(v) for k,v in toml.load(path).items()
     }
+
+def load_env_vars(key, prefix: str ="POSTGRES"):
+    """
+    Reads environment variables that are unique to the user. There should be a
+    .env file at this project's root directory.
+
+    Args:
+        - prefix (str): prefix for a variable denoting the platform it is used in
+        (i.e. "POSTGRES_HOST") --> "POSTGRES" would be the prefix
+        - key: the name of the key you want to store variables in
+
+    Returns:
+        - env_config (dict): dictionary object containing environment variables
+        and their values
+    """
+    env_path = join(os.getcwd(), ".env")
+    if not exists(env_path):
+        raise InvalidFilePath(f"{env_path} does not exist")
+
+    vars_no_prefix = ["HOST", "NAME", "PORT", "USERNAME", "PASSWORD"]
+    env_config = dict()
+    env_config.setdefault(key, {})
+
+    for var in vars_no_prefix:
+        env_config[key][var] = cfg(f"{prefix}_{var}")
+
+    return env_config
 
 def check_for_regex_match(val: str, PATTERN: Pattern[str]) -> bool:
     """
@@ -129,8 +158,13 @@ def load_configuration(path: str) -> Box:
 
     final_config = mapping.flatdict_to_dict(flat_config)
 
+    # environment variables
+    env_vars = load_env_vars("database", "POSTGRES")
+
+    # merges environment and configuration objects
     # convert to box in order to access keys as attributes
-    final_config = Box(final_config)
+    final_config = Box({**final_config, **env_vars})
+
     return final_config
 
 # object to be exported for use in `app`
